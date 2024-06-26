@@ -14,7 +14,10 @@ func TestMapOne(t *testing.T) {
 
 	headerRecord := []string{"123", "A", "b", " c", "d"}
 
-	Map(headerRecord, &s)
+	if err := Map(headerRecord, &s); err != nil {
+		t.Fatalf("Error mapping: %v", err)
+		return
+	}
 
 	if s.A != 1 {
 		t.Fatalf("A should be 1 and was %d", s.A)
@@ -39,7 +42,10 @@ func TestMapTwo(t *testing.T) {
 
 	headerRecord := []string{"c", "d", "a", "%", "b"}
 
-	Map(headerRecord, &s)
+	if err := Map(headerRecord, &s); err != nil {
+		t.Fatalf("Error mapping: %v", err)
+		return
+	}
 
 	if s.A != 2 {
 		t.Fatalf("A should be 2 and was %d", s.A)
@@ -71,7 +77,10 @@ func TestMapThree(t *testing.T) {
 
 	headerRecord := []string{"x", "y", "z", "w"}
 
-	Map(headerRecord, &s)
+	if err := Map(headerRecord, &s); err != nil {
+		t.Fatalf("Error mapping: %v", err)
+		return
+	}
 
 	if s.A != 0 {
 		t.Fatalf("A should be 2 and was %d", s.A)
@@ -88,5 +97,56 @@ func TestMapThree(t *testing.T) {
 	if s.D != -1 {
 		t.Fatalf("D should be -1 and was %d", s.D)
 		return
+	}
+}
+
+type testRequiredStruct struct {
+	A int `csv:"a" csvOption:"required"`
+	B int `csv:"B"`
+	C int `csv:"C "`
+	D int `csv:"-"`
+}
+
+func TestMapRequired(t *testing.T) {
+	s := testRequiredStruct{}
+
+	headerRecord := []string{"123", "B", " c", "d"}
+
+	err := Map(headerRecord, &s)
+	if err == nil || err.Error() != "required field a not found in header row" {
+		t.Fatalf("Expected error for required field not found, got %v", err)
+	}
+
+	headerRecord = []string{"123", "a", "B", " c", "d"}
+
+	err = Map(headerRecord, &s)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+}
+
+type testIntStruct struct {
+	A int     `csv:"a"`
+	B float64 `csv:"B"`
+	C string  `csv:"C "`
+	D int     `csv:"-"`
+}
+
+func TestMapInt(t *testing.T) {
+	s := testIntStruct{}
+
+	headerRecord := []string{"123", "a", "B", " c", "d"}
+
+	err := Map(headerRecord, &s)
+	if err == nil || err.Error() != "field B is not of type int" {
+		t.Fatalf("Expected error for non-int field, got %v", err)
+	}
+
+	s = testIntStruct{}
+	headerRecord = []string{"123", "a", " c", "d"}
+
+	err = Map(headerRecord, &s)
+	if err == nil || err.Error() != "field B is not of type int" {
+		t.Fatalf("Expected error for non-int field, got %v", err)
 	}
 }
